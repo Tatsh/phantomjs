@@ -32,7 +32,7 @@
 #include <QDir>
 #include <QMetaMethod>
 #include <QMetaProperty>
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QStandardPaths>
 #include <QTimer>
 
@@ -122,7 +122,7 @@ QStringList REPL::_enumerateCompletions(QObject* obj) const
         completions.insert(name, true);
     }
 
-    return completions.uniqueKeys();
+    return completions.keys();
 }
 
 // private:
@@ -133,12 +133,12 @@ REPL::REPL(QWebFrame* webframe, Phantom* parent)
     m_webframe = webframe;
     m_parentPhantom = parent;
     m_historyFilepath = QString("%1/%2").arg(
-                                            QStandardPaths::writableLocation(QStandardPaths::DataLocation),
+                                            QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation),
                                             HISTORY_FILENAME)
                             .toLocal8Bit();
 
     // Ensure the location for the history file exists
-    QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+    QDir().mkpath(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation));
 
     // Listen for Phantom exit(ing)
     connect(m_parentPhantom, SIGNAL(aboutToExit(int)), this, SLOT(stopLoop(int)));
@@ -162,7 +162,7 @@ void REPL::offerCompletion(const char* buf, linenoiseCompletions* lc)
     QString buffer(buf);
     int lastIndexOfDot = -1;
     QString toInspect, toComplete;
-    QRegExp nonCompletableChars(REGEXP_NON_COMPLETABLE_CHARS);
+    QRegularExpression nonCompletableChars(REGEXP_NON_COMPLETABLE_CHARS);
 
     // If we encounter a non acceptable character (see above)
     if (buffer.contains(nonCompletableChars)) {

@@ -51,12 +51,16 @@ ChildProcessContext::~ChildProcessContext()
 
 qint64 ChildProcessContext::pid() const
 {
-    Q_PID pid = m_proc.pid();
+ #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+     Q_PID pid = m_proc.pid();
 
 #if !defined(Q_OS_WIN) && !defined(Q_OS_WINCE)
     return pid;
 #else
     return pid->dwProcessId;
+#endif
+#else
+    return m_proc.processId();
 #endif
 }
 

@@ -38,6 +38,7 @@
 #include <QSslCipher>
 #include <QSslKey>
 #include <QSslSocket>
+#include <QStandardPaths>
 
 #include "config.h"
 #include "cookiejar.h"
@@ -137,17 +138,21 @@ struct ssl_protocol_option {
     const char* name;
     QSsl::SslProtocol proto;
 };
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 const ssl_protocol_option ssl_protocol_options[] = {
     { "default", QSsl::SecureProtocols },
     { "tlsv1.2", QSsl::TlsV1_2 },
     { "tlsv1.1", QSsl::TlsV1_1 },
     { "tlsv1.0", QSsl::TlsV1_0 },
     { "tlsv1", QSsl::TlsV1_0 },
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     { "sslv3", QSsl::SslV3 },
+#endif
     { "any", QSsl::AnyProtocol },
     { 0, QSsl::UnknownProtocol }
 };
-
+#pragma GCC diagnostic pop
 // public:
 NetworkAccessManager::NetworkAccessManager(QObject* parent, const Config* config)
     : QNetworkAccessManager(parent)
@@ -212,7 +217,7 @@ void NetworkAccessManager::prepareSslConfiguration(const Config* config)
         QList<QSslCipher> cipherList;
         foreach (const QString& cipherName,
             config->sslCiphers().split(QLatin1String(":"),
-                QString::SkipEmptyParts)) {
+                Qt::SkipEmptyParts)) {
             QSslCipher cipher(cipherName);
             if (!cipher.isNull()) {
                 cipherList << cipher;
@@ -225,14 +230,14 @@ void NetworkAccessManager::prepareSslConfiguration(const Config* config)
 
     if (!config->sslCertificatesPath().isEmpty()) {
         QList<QSslCertificate> caCerts = QSslCertificate::fromPath(
-            config->sslCertificatesPath(), QSsl::Pem, QRegExp::Wildcard);
+            config->sslCertificatesPath(), QSsl::Pem, QSslCertificate::PatternSyntax::Wildcard);
 
         m_sslConfiguration.setCaCertificates(caCerts);
     }
 
     if (!config->sslClientCertificateFile().isEmpty()) {
         QList<QSslCertificate> clientCerts = QSslCertificate::fromPath(
-            config->sslClientCertificateFile(), QSsl::Pem, QRegExp::Wildcard);
+            config->sslClientCertificateFile(), QSsl::Pem, QSslCertificate::PatternSyntax::Wildcard);
 
         if (!clientCerts.isEmpty()) {
             QSslCertificate clientCert = clientCerts.first();
@@ -316,7 +321,7 @@ QNetworkReply* NetworkAccessManager::createRequest(Operation op, const QNetworkR
 
     // Get the URL string before calling the superclass. Seems to work around
     // segfaults in Qt 4.8: https://gist.github.com/1430393
-    QByteArray url = req.url().toEncoded();
+    QString url = req.url().toString();
     QByteArray postData;
 
     // http://code.google.com/p/phantomjs/issues/detail?id=337
@@ -349,11 +354,11 @@ QNetworkReply* NetworkAccessManager::createRequest(Operation op, const QNetworkR
 
     QVariantMap data;
     data["id"] = m_idCounter;
-    data["url"] = url.data();
+    data["url"] = url;
     data["method"] = toString(op);
     data["headers"] = headers;
     if (op == QNetworkAccessManager::PostOperation) {
-        data["postData"] = postData.data();
+        data["postData"] = postData;
     }
     data["time"] = QDateTime::currentDateTime();
 
@@ -435,7 +440,7 @@ void NetworkAccessManager::handleStarted()
     QVariantMap data;
     data["stage"] = "start";
     data["id"] = m_ids.value(reply);
-    data["url"] = reply->url().toEncoded().data();
+    data["url"] = reply->url().toString();
     data["status"] = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);
     data["statusText"] = reply->attribute(QNetworkRequest::HttpReasonPhraseAttribute);
     data["contentType"] = reply->header(QNetworkRequest::ContentTypeHeader);
@@ -479,7 +484,7 @@ void NetworkAccessManager::handleFinished(QNetworkReply* reply, const QVariant& 
     QVariantMap data;
     data["stage"] = "end";
     data["id"] = m_ids.value(reply);
-    data["url"] = reply->url().toEncoded().data();
+    data["url"] = reply->url().toString();
     data["status"] = status;
     data["statusText"] = statusText;
     data["contentType"] = reply->header(QNetworkRequest::ContentTypeHeader);
@@ -516,7 +521,7 @@ void NetworkAccessManager::handleNetworkError()
 
     QVariantMap data;
     data["id"] = m_ids.value(reply);
-    data["url"] = reply->url().toEncoded().data();
+    data["url"] = reply->url().toString();
     data["errorCode"] = reply->error();
     data["errorString"] = reply->errorString();
     data["status"] = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute);

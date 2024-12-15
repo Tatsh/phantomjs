@@ -48,6 +48,7 @@
 #include <QNetworkRequest>
 #include <QPainter>
 #include <QScreen>
+#include <QStandardPaths>
 #include <QUrl>
 #include <QUuid>
 #include <QWebElement>
@@ -413,7 +414,7 @@ WebPage::WebPage(QObject* parent, const QUrl& baseUrl)
 
     if (isLocalStorageEnabled) {
         if (phantomCfg->localStoragePath().isEmpty()) {
-            pageSettings->setLocalStoragePath(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+            pageSettings->setLocalStoragePath(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation));
         } else {
             pageSettings->setLocalStoragePath(phantomCfg->localStoragePath());
         }
@@ -896,11 +897,11 @@ void WebPage::openUrl(const QString& address, const QVariant& op, const QVariant
     applySettings(settings);
     m_customWebPage->triggerAction(QWebPage::Stop);
 
-    if (op.type() == QVariant::String) {
+    if (op.typeId() == QVariant::String) {
         operation = op.toString();
     }
 
-    if (op.type() == QVariant::Map) {
+    if (op.typeId() == QVariant::Map) {
         QVariantMap settingsMap = op.toMap();
         operation = settingsMap.value("operation").toString();
         QString bodyString = settingsMap.value("data").toString();
@@ -1181,7 +1182,7 @@ qreal WebPage::stringToPointSize(const QString& string) const
 qreal WebPage::printMargin(const QVariantMap& map, const QString& key)
 {
     const QVariant margin = map.value(key);
-    if (margin.isValid() && margin.canConvert(QVariant::String)) {
+    if (margin.isValid() && margin.canConvert<QString>()) {
         return stringToPointSize(margin.toString());
     } else {
         return 0;
@@ -1268,13 +1269,13 @@ bool WebPage::renderPdf(QPdfWriter& pdfWriter)
 
     if (paperSize.contains("margin")) {
         const QVariant margins = paperSize["margin"];
-        if (margins.canConvert(QVariant::Map)) {
+        if (margins.canConvert<QVariantMap>()) {
             const QVariantMap map = margins.toMap();
             marginLeft = printMargin(map, "left");
             marginTop = printMargin(map, "top");
             marginRight = printMargin(map, "right");
             marginBottom = printMargin(map, "bottom");
-        } else if (margins.canConvert(QVariant::String)) {
+        } else if (margins.canConvert<QString>()) {
             const qreal margin = stringToPointSize(margins.toString());
             marginLeft = margin;
             marginTop = margin;
@@ -1310,11 +1311,11 @@ QString WebPage::windowName() const
 qreal WebPage::getHeight(const QVariantMap& map, const QString& key) const
 {
     QVariant footer = map.value(key);
-    if (!footer.canConvert(QVariant::Map)) {
+    if (!footer.canConvert<QVariantMap>()) {
         return 0;
     }
     QVariant height = footer.toMap().value("height");
-    if (!height.canConvert(QVariant::String)) {
+    if (!height.canConvert<QString>()) {
         return 0;
     }
     return stringToPointSize(height.toString());
@@ -1333,7 +1334,7 @@ qreal WebPage::headerHeight() const
 QString getHeaderFooter(const QVariantMap& map, const QString& key, QWebFrame* frame, int page, int numPages)
 {
     QVariant header = map.value(key);
-    if (!header.canConvert(QVariant::Map)) {
+    if (!header.canConvert<QVariantMap>()) {
         return QString();
     }
     QVariant callback = header.toMap().value("contents");
@@ -1341,7 +1342,7 @@ QString getHeaderFooter(const QVariantMap& map, const QString& key, QWebFrame* f
         Callback* caller = qobject_cast<Callback*>(callback.value<QObject*>());
         if (caller) {
             QVariant ret = caller->call(QVariantList() << page << numPages);
-            if (ret.canConvert(QVariant::String)) {
+            if (ret.canConvert<QString>()) {
                 return ret.toString();
             }
         }
@@ -1452,11 +1453,11 @@ void WebPage::sendEvent(const QString& type, const QVariant& arg1, const QVarian
 
         int key = 0;
         QString text;
-        if (arg1.type() == QVariant::Char) {
+        if (arg1.typeId() == QVariant::Char) {
             // a single char was given
             text = arg1.toChar();
             key = text.at(0).toUpper().unicode();
-        } else if (arg1.type() == QVariant::String) {
+        } else if (arg1.typeId() == QVariant::String) {
             // javascript invokation of a single char
             text = arg1.toString();
             if (!text.isEmpty()) {
@@ -1474,7 +1475,7 @@ void WebPage::sendEvent(const QString& type, const QVariant& arg1, const QVarian
 
     // sequence of key events: will generate all the single keydown/keyup events
     if (eventType == "keypress") {
-        if (arg1.type() == QVariant::String) {
+        if (arg1.typeId() == QVariant::String) {
             // this is the case for e.g. sendEvent("...", 'A')
             // but also works with sendEvent("...", "ABCD")
             foreach (const QChar typeChar, arg1.toString()) {
@@ -1526,7 +1527,7 @@ void WebPage::sendEvent(const QString& type, const QVariant& arg1, const QVarian
 
         // Prepare the Mouse event
         qDebug() << "Mouse Event:" << eventType << "(" << mouseEventType << ")" << m_mousePos << ")" << button << buttons;
-        QMouseEvent* event = new QMouseEvent(mouseEventType, m_mousePos, button, buttons, keyboardModifiers);
+        QMouseEvent* event = new QMouseEvent(mouseEventType, m_mousePos, QCursor::pos(), button, buttons, keyboardModifiers);
 
         // Post and process events
         QApplication::postEvent(m_customWebPage, event);

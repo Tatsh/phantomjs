@@ -71,6 +71,7 @@ private:
 
     QFile* m_file;
     QTextStream* m_fileStream;
+    QTextCodec *m_codec;
 };
 
 class FileSystem : public QObject {

@@ -49,7 +49,7 @@ QString unescape(QByteArray in)
 {
     // first step: decode '+' to spaces
     for (int i = 0; i < in.length(); ++i) {
-        QByteRef c = in[i];
+        auto c = in[i];
         if (c == '+') {
             c = ' ';
         }
@@ -210,7 +210,7 @@ bool WebServer::handleRequest(mg_event event, mg_connection* conn, const mg_requ
         uri.append('?');
         uri.append(qs);
     }
-    requestObject["url"] = uri.data();
+    requestObject["url"] = QString(uri);
 
 #if 0
     // Non-standard and thus disable for the time being.

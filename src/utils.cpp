@@ -36,6 +36,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QFile>
+#include <QRegularExpression>
 #include <QtWebKitWidgets/QWebFrame>
 
 static QString findScript(const QString& jsFilePath, const QString& libraryPath)
@@ -64,7 +65,7 @@ static QString jsFromScriptFile(const QString& scriptPath, const Encoding& enc)
 
         // Remove CLI script heading
         if (scriptBody.startsWith("#!")) {
-            int len = scriptBody.indexOf(QRegExp("[\r\n]"));
+            int len = scriptBody.indexOf(QRegularExpression("[\r\n]"));
             if (len == -1) {
                 len = scriptBody.length();
             }

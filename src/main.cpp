@@ -62,7 +62,9 @@ static int inner_main(int argc, char** argv)
 #if defined(Q_OS_LINUX)
     if (QSslSocket::supportsSsl()) {
         // Don't perform on-demand loading of root certificates on Linux
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         QSslSocket::addDefaultCaCertificates(QSslConfiguration::systemCaCertificates());
+#endif
     }
 #endif
 

@@ -191,11 +191,11 @@ bool CookieJar::addCookieFromMap(const QVariantMap& cookie, const QString& url)
 
         if (expiresVar.isValid()) {
             QDateTime expirationDate;
-            if (expiresVar.type() == QVariant::String) {
+            if (expiresVar.typeId() == QVariant::String) {
                 // Set cookie expire date via "classic" string format
                 QString datetime = expiresVar.toString().replace(" GMT", "");
                 expirationDate = QDateTime::fromString(datetime, "ddd, dd MMM yyyy hh:mm:ss");
-            } else if (expiresVar.type() == QVariant::Double) {
+            } else if (expiresVar.typeId() == QVariant::Double) {
                 // Set cookie expire date via "number of seconds since epoch"
                 // NOTE: Every JS number is a Double.
                 // @see http://www.ecma-international.org/publications/files/ECMA-ST/Ecma-262.pdf
@@ -477,7 +477,9 @@ void CookieJar::load()
 {
     if (isEnabled()) {
         // Register a "StreamOperator" for this Meta Type, so we can easily serialize/deserialize the cookies
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         qRegisterMetaTypeStreamOperators<QList<QNetworkCookie>>("QList<QNetworkCookie>");
+#endif
 
         // Load all the cookies
         if (m_cookieStorage) {

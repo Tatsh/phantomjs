@@ -109,9 +109,9 @@ void Phantom::init()
     // set the default DPI
     m_defaultDpi = qRound(QApplication::primaryScreen()->logicalDotsPerInch());
 
-    QWebSettings::setOfflineWebApplicationCachePath(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+    QWebSettings::setOfflineWebApplicationCachePath(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation));
     if (m_config.offlineStoragePath().isEmpty()) {
-        QWebSettings::setOfflineStoragePath(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+        QWebSettings::setOfflineStoragePath(QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation));
     } else {
         QWebSettings::setOfflineStoragePath(m_config.offlineStoragePath());
     }

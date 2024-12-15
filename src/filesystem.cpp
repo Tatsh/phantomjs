@@ -41,10 +41,13 @@ File::File(QFile* openfile, QTextCodec* codec, QObject* parent)
     : QObject(parent)
     , m_file(openfile)
     , m_fileStream(0)
+    , m_codec(codec)
 {
     if (codec) {
         m_fileStream = new QTextStream(m_file);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
         m_fileStream->setCodec(codec);
+#endif
     }
 }
 
@@ -65,7 +68,7 @@ QString File::read(const QVariant& n)
     qint64 bytesToRead = 1024;
 
     // If parameter can be converted to a qint64, do so and use that value instead
-    if (n.canConvert(QVariant::LongLong)) {
+    if (n.canConvert<qlonglong>()) {
         bytesToRead = n.toLongLong();
     }
 
@@ -242,15 +245,17 @@ bool File::setEncoding(const QString& encoding)
     }
 
     // Check whether encoding actually needs to be changed
-    const QString encodingBeforeUpdate(m_fileStream->codec()->name());
-    if (0 == encodingBeforeUpdate.compare(QString(codec->name()), Qt::CaseInsensitive)) {
+    const QString encodingBeforeUpdate(m_codec->name());
+    if (0 == encodingBeforeUpdate.compare(QString(m_codec->name()), Qt::CaseInsensitive)) {
         return false;
     }
 
+ #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     m_fileStream->setCodec(codec);
+#endif
 
     // Return whether update was successful
-    const QString encodingAfterUpdate(m_fileStream->codec()->name());
+    const QString encodingAfterUpdate(m_codec->name());
     return 0 != encodingBeforeUpdate.compare(encodingAfterUpdate, Qt::CaseInsensitive);
 }
 
@@ -259,7 +264,7 @@ QString File::getEncoding() const
     QString encoding;
 
     if (m_fileStream) {
-        encoding = QString(m_fileStream->codec()->name());
+        encoding = m_codec->name();
     }
 
     return encoding;
@@ -460,7 +465,7 @@ QObject* FileSystem::_open(const QString& path, const QVariantMap& opts) const
 
     const QVariant modeVar = opts["mode"];
     // Ensure only strings
-    if (modeVar.type() != QVariant::String) {
+    if (modeVar.typeId() != QVariant::String) {
         qDebug() << "FileSystem::open - "
                  << "Mode must be a string!" << modeVar;
         return 0;
