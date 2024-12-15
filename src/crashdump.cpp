@@ -47,7 +47,7 @@
 void print_crash_message()
 {
     fputs("PhantomJS has crashed. Please read the bug reporting guide at\n"
-          "<http://phantomjs.org/bug-reporting.html> and file a bug report.\n",
+          "<http://github.com/Tatsh/phantomjs/issues> and file a bug report.\n",
         stderr);
     fflush(stderr);
 }
